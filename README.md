@@ -1,12 +1,12 @@
 # Turbofan Engine Remaining Useful Life Prediction (FD001)
 
-> *Reliability Engineering & Machine Learning — Full Walkthrough*
+> *Reliability Engineering & Machine Learning —*
 
 ---
 
 # 1. Project Overview
 
-We predict the **Remaining Useful Life (RUL)** of turbofan engines from the NASA C-MAPSS dataset using a hybrid:
+Predict the **Remaining Useful Life (RUL)** of turbofan engines from the NASA C-MAPSS dataset using a hybrid:
 - **Reliability modeling** (Weibull distribution, Mean Residual Life)
 - **Machine Learning** (Random-Forest and XGBoost regressors)
 
@@ -68,9 +68,19 @@ turbofan-rul/
 - Fit a two-parameter **Weibull** distribution to engine lifetimes.
 - Compute **Mean Residual Life** \( L(t) \) for each engine based on its age.
 
-\[ \text{Survivor} \quad S(t) = \exp \left( - \left(\frac{t}{\lambda} \right)^\kappa \right) \]
+**Weibull Survivor Function:**
 
-\[ \text{MRL} \quad L(t) = \frac{\int_t^\infty S(u) du}{S(t)} - t \]
+$$
+S(t) = \exp\left( -\left(\frac{t}{\lambda}\right)^\kappa \right)
+$$
+
+---
+
+**Mean Residual Life (MRL) Function:**
+
+$$
+L(t) = \frac{\int_t^\infty S(u) \, du}{S(t)} - t
+$$
 
 ### Step 3: Engineer rolling features
 - For each sensor: moving averages, minima, maxima, standard deviations (5 and 30-cycle windows).
@@ -86,27 +96,109 @@ turbofan-rul/
   - **RMSE**: Root Mean Square Error
   - **PHM08 Score**: Penalty-heavy metric from the PHM 2008 Challenge
 
-Penalty function:
+### PHM08 Penalty Function
 
-\[ \text{penalty}(d) = \begin{cases}
-    e^{-d/13} - 1, & d < 0 \\
+$$
+\text{penalty}(d) = \begin{cases}
+    e^{-d/13} - 1, & d < 0 \\\\
     e^{d/10} - 1, & d \geq 0
-\end{cases} \]
+\end{cases}
+$$
+
+This penalty function is asymmetric: late predictions are penalized exponentially more.
+
+# 5. Key Figures (Detailed)
+
+### **A) Lifetime distribution**
+
+![](reports/figures/lifetime_hist.png)
+
+**What it shows:**
+- Number of engines surviving to different lifetimes.
+- Peak around 170–220 cycles.
+
+**Why it matters:**
+- Sets the scale of typical engine life.
+- Shows natural variation and motivates statistical modeling.
+
+**Decision:**
+✅ Expect failure most commonly between 170–220 cycles.
 
 ---
 
-# 5. Key Figures
+### **B) Sensor drift examples**
 
-| Step | Figure | Preview |
-|------|--------|---------|
-| **A** | Lifetime distribution | ![](reports/figures/lifetime_hist.png) |
-| **B** | Sensor drift examples | ![](reports/figures/sensor_traces.png) |
-| **C** | Survivor curve fit | ![](reports/figures/survivor_fit.png) |
-| **D** | MRL curve (expected life) | ![](reports/figures/mrl_curve.png) |
-| **E** | RF feature importances | ![](reports/figures/rf_feat_imp.png) |
-| **F** | RF test-set residuals | ![](reports/figures/err_hist.png) |
+![](reports/figures/sensor_traces.png)
 
-Each figure tells part of the story from raw data → degradation modeling → final predictive power.
+**What it shows:**
+- Sensor readings for three engines over their lifetime.
+
+**Why it matters:**
+- Shows subtle, noisy drifts in sensor values.
+- Indicates need for rolling/statistical feature engineering.
+
+**Decision:**
+✅ Engineer moving averages, maxima, minima.
+
+---
+
+### **C) Survivor curve: Weibull vs Kaplan-Meier**
+
+![](reports/figures/survivor_fit.png)
+
+**What it shows:**
+- Fitted Weibull survival curve over empirical survival curve.
+
+**Why it matters:**
+- Shows Weibull fits reasonably well — imperfect but strong starting point.
+
+**Decision:**
+✅ Use Weibull \( S(t) \) and derive \( L(t) \) for modeling and features.
+
+---
+
+### **D) Mean Residual Life (MRL) curve**
+
+![](reports/figures/mrl_curve.png)
+
+**What it shows:**
+- Expected remaining life based on engine age.
+
+**Why it matters:**
+- Natural decline; strong scalar feature indicating health.
+
+**Decision:**
+✅ Include Weibull MRL as a major feature in ML models.
+
+---
+
+### **E) Random-Forest feature importances**
+
+![](reports/figures/rf_feat_imp.png)
+
+**What it shows:**
+- Top 15 most impactful features.
+
+**Why it matters:**
+- Confirms that MRL and engineered rolling sensor features dominate.
+
+**Decision:**
+✅ Trust feature engineering pipeline.
+
+---
+
+### **F) RF test-set residuals**
+
+![](reports/figures/err_hist.png)
+
+**What it shows:**
+- Histogram of prediction errors.
+
+**Why it matters:**
+- Errors are centered and symmetric; no large systematic bias.
+
+**Decision:**
+✅ RF model is acceptable and reliable.
 
 ---
 
@@ -117,9 +209,6 @@ Each figure tells part of the story from raw data → degradation modeling → f
 | Weibull MRL baseline | 45.2 | 48.8 | 150.3 |
 | **Random-Forest (final)** | **19.3** | **26.8** | **79.0** |
 | XGBoost (basic) | 20.6 | 28.8 | 76.2 |
-
-- **Random-Forest** achieved the best balance of accuracy and stability.
-- **XGBoost** slightly higher MAE; longer training; some instability.
 
 ---
 
@@ -146,7 +235,7 @@ python -m turbofan.train_xgb
 
 ---
 
----
+
 
 # 9. References
 
@@ -156,5 +245,5 @@ python -m turbofan.train_xgb
 
 ---
 
-> 2025 — Final Reliability Engineering Project — Marouf Paul 🚀
+> 2025 — Final Reliability Engineering Project — Marouf Paul & Team 🚀
 
