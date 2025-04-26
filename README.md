@@ -71,7 +71,7 @@ turbofan-rul/
 **Weibull Survivor Function:**
 
 $$
-S(t) = \exp\left( -\left(\frac{t}{\lambda}\right)^\kappa \right)
+S(t) = e^( -(\frac{t}{\lambda})^\kappa)
 $$
 
 ---
