@@ -1,0 +1,20 @@
+# ---- Python -------------------------------------------------
+*.py[cod]
+__pycache__/
+*.so
+# virtual environments
+.venv/
+env/
+# Jupyter
+.ipynb_checkpoints/
+# ---- VS Code / IDE files -----------------------------------
+.vscode/
+.idea/
+# ---- OS cruft ----------------------------------------------
+.DS_Store
+Thumbs.db
+# ---- Data / model artefacts --------------------------------
+data/processed/
+models/
+reports/figures/
+

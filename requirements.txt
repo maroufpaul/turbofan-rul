@@ -1,0 +1,22 @@
+# --- foundations ----
+numpy>=1.26
+pandas>=2.2
+scipy>=1.11
+scikit-learn>=1.4
+matplotlib>=3.8
+seaborn>=0.13
+tqdm>=4.66
+
+# --- reliability + survival ---
+lifelines>=0.30          # parametric & Cox models
+scikit-survival>=0.24.1  # time-varying & RSF
+pycox>=0.2               # deep survival
+torchtuples>=0.2
+
+# --- machine-learning models ---
+xgboost>=2.0
+torch>=2.2               # CPU build; replace with +cu118 if you have CUDA
+
+# --- utilities ---
+optuna>=3.6              # hyper-parameter tuning
+jupyterlab               # notebook UI

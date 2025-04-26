@@ -1,0 +1,9 @@
+[project]
+name = "turbofan"
+version = "0.0.1"
+description = "NASA C-MAPSS RUL experiments"
+dependencies = []
+
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
