@@ -1,6 +1,6 @@
 # Turbofan Engine Remaining Useful Life Prediction (FD001)
 
-> *Reliability Engineering & Machine Learning —*
+> *Reliability Engineering & Machine Learning*
 
 ---
 
@@ -96,16 +96,8 @@ $$
   - **RMSE**: Root Mean Square Error
   - **PHM08 Score**: Penalty-heavy metric from the PHM 2008 Challenge
 
-### PHM08 Penalty Function
 
-$$
-\text{penalty}(d) = \begin{cases}
-    e^{-d/13} - 1, & d < 0 \\\\
-    e^{d/10} - 1, & d \geq 0
-\end{cases}
-$$
 
-This penalty function is asymmetric: late predictions are penalized exponentially more.
 
 # 5. Key Figures (Detailed)
 
@@ -204,11 +196,11 @@ This penalty function is asymmetric: late predictions are penalized exponentiall
 
 # 6. Results Summary
 
-| Model | MAE (cycles) | RMSE (cycles) | PHM08 Sum |
-|------|-------------:|--------------:|----------:|
-| Weibull MRL baseline | 45.2 | 48.8 | 150.3 |
-| **Random-Forest (final)** | **19.3** | **26.8** | **79.0** |
-| XGBoost (basic) | 20.6 | 28.8 | 76.2 |
+| Model | MAE (cycles) | RMSE (cycles) | 
+|------|-------------:|--------------:|
+| Weibull MRL baseline | 45.2 | 48.8 | 
+| **Random-Forest (final)** | **19.3** | **26.8** | 
+| XGBoost (basic) | 20.6 | 28.8 | 
 
 ---
 
