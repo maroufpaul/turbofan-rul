@@ -1,120 +1,160 @@
-# Turbofan RUL Prediction — FD001 Case Study
+# Turbofan Engine Remaining Useful Life Prediction (FD001)
 
-> *A hybrid reliability + machine‑learning*
-
----
-
-## 1  Project snapshot
-
-| item | value |
-|------|-------|
-| Dataset | NASA C‑MAPSS **FD001** (100 train + 100 test engines) |
-| Goal | Predict Remaining Useful Life (RUL) per engine |
-| Best model | Random‑Forest (400× trees, min leaf 2) |
-| Test results | **MAE 19.3 cycles  ·  RMSE 26.8  ·  PHM08 79 (sum)** |
+> *Reliability Engineering & Machine Learning — Full Walkthrough*
 
 ---
 
-## 2  Repo layout
+# 1. Project Overview
+
+We predict the **Remaining Useful Life (RUL)** of turbofan engines from the NASA C-MAPSS dataset using a hybrid:
+- **Reliability modeling** (Weibull distribution, Mean Residual Life)
+- **Machine Learning** (Random-Forest and XGBoost regressors)
+
+This enables **predictive maintenance** before failure.
+
+---
+
+# 2. Final Directory Structure
 
 ```
 turbofan-rul/
-├─ data/            # raw NASA txt files
-│  └─ raw/FD001/
-├─ notebooks/       # Jupyter exploration & reports
-│  └─ 01_eda_fd001.ipynb
-├─ src/turbofan/    # feature & model code (importable)
-│  ├─ data_loading.py
-│  ├─ reliability.py
-│  ├─ features.py
-│  ├─ train_xgb.py
-│  └─ …
-├─ models/          # saved joblib / json models
-│  ├─ rf_fd001.joblib
-│  └─ xgb_fd001.json
-├─ reports/
-│  ├─ rf_fd001_predictions.csv
-│  └─ figures/      # screenshots go here
-└─ README.md        # this file
+├── data/
+│   ├── processed/           # (currently unused)
+│   └── raw/FD001–FD004/      # NASA run-to-failure datasets
+│       └── RUL, train, test files
+├── models/                  # Saved ML models
+│   ├── rf_fd001.joblib
+│   └── xgb_fd001.json
+├── notebooks/               # Jupyter analysis
+│   ├── 01_eda_fd001.ipynb
+│   └── 03_figures_fd001.ipynb
+├── reports/                 # Predictions + final figures
+│   ├── rf_fd001_predictions.csv
+│   ├── xgb_fd001_predictions.csv
+│   └── figures/
+│       ├── lifetime_hist.png
+│       ├── sensor_traces.png
+│       ├── survivor_fit.png
+│       ├── mrl_curve.png
+│       ├── rf_feat_imp.png
+│       └── err_hist.png
+├── src/turbofan/             # Core pipeline
+│   ├── data_loading.py
+│   ├── features.py
+│   ├── reliability.py
+│   ├── eval.py
+│   ├── train_xgb.py
+│   └── __init__.py
+└── README.md                 # (this file)
 ```
 
 ---
 
-## 3  How to reproduce
+# 3. Problem Formulation
+
+**Given:** noisy sensor streams from multiple engines until failure.
+
+**Predict:** Remaining Useful Life (RUL) — cycles left until failure — for each engine in the test set.
+
+---
+
+# 4. Workflow Summary
+
+### Step 1: Understand degradation patterns
+- Sensor data shows small drifts masked by noise.
+- Lifetime varies between ~130–350 cycles.
+
+### Step 2: Model reliability baseline
+- Fit a two-parameter **Weibull** distribution to engine lifetimes.
+- Compute **Mean Residual Life** \( L(t) \) for each engine based on its age.
+
+\[ \text{Survivor} \quad S(t) = \exp \left( - \left(\frac{t}{\lambda} \right)^\kappa \right) \]
+
+\[ \text{MRL} \quad L(t) = \frac{\int_t^\infty S(u) du}{S(t)} - t \]
+
+### Step 3: Engineer rolling features
+- For each sensor: moving averages, minima, maxima, standard deviations (5 and 30-cycle windows).
+- Add age, settings, and Weibull MRL as input features.
+
+### Step 4: Machine learning models
+- Train a **Random-Forest** and an **XGBoost** regressor on the feature matrix.
+- Tune hyperparameters lightly (n_estimators, max_depth, learning_rate).
+
+### Step 5: Evaluation
+- Metrics:
+  - **MAE**: Mean Absolute Error
+  - **RMSE**: Root Mean Square Error
+  - **PHM08 Score**: Penalty-heavy metric from the PHM 2008 Challenge
+
+Penalty function:
+
+\[ \text{penalty}(d) = \begin{cases}
+    e^{-d/13} - 1, & d < 0 \\
+    e^{d/10} - 1, & d \geq 0
+\end{cases} \]
+
+---
+
+# 5. Key Figures
+
+| Step | Figure | Preview |
+|------|--------|---------|
+| **A** | Lifetime distribution | ![](reports/figures/lifetime_hist.png) |
+| **B** | Sensor drift examples | ![](reports/figures/sensor_traces.png) |
+| **C** | Survivor curve fit | ![](reports/figures/survivor_fit.png) |
+| **D** | MRL curve (expected life) | ![](reports/figures/mrl_curve.png) |
+| **E** | RF feature importances | ![](reports/figures/rf_feat_imp.png) |
+| **F** | RF test-set residuals | ![](reports/figures/err_hist.png) |
+
+Each figure tells part of the story from raw data → degradation modeling → final predictive power.
+
+---
+
+# 6. Results Summary
+
+| Model | MAE (cycles) | RMSE (cycles) | PHM08 Sum |
+|------|-------------:|--------------:|----------:|
+| Weibull MRL baseline | 45.2 | 48.8 | 150.3 |
+| **Random-Forest (final)** | **19.3** | **26.8** | **79.0** |
+| XGBoost (basic) | 20.6 | 28.8 | 76.2 |
+
+- **Random-Forest** achieved the best balance of accuracy and stability.
+- **XGBoost** slightly higher MAE; longer training; some instability.
+
+---
+
+# 7. How to Reproduce
 
 ```bash
-# 0. clone & create venv
-python -m venv .venv && source .venv/bin/activate
+# Clone the repo and enter
+cd turbofan-rul
+
+# Setup venv
+python -m venv .venv
+.venv\Scripts\activate
 pip install -r requirements.txt
 
-# 1.  Random‑Forest baseline
-python -m turbofan.train_rf         # ~45 s
+# Train Random-Forest
+python -m turbofan.train_rf
 
-# 2.  Evaluate on test set & write CSV
-jupyter nbconvert --execute notebooks/02_evaluate_rf.ipynb
+# Predict and evaluate in notebook
+jupyter notebook notebooks/01_eda_fd001.ipynb
 
-# 3.  Optional: XGBoost experiment
-python -m turbofan.train_xgb        # ~3 min
+# (Optional) Train XGBoost
+python -m turbofan.train_xgb
 ```
 
 ---
 
-## 4  Workflow in pictures
+---
 
-> Add each screenshot to `reports/figures/` and commit.<br>
-> Use <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>S</kbd> (Windows Snip) or
-> <kbd>⇧⌘4</kbd> (macOS) to grab the plot area.
+# 9. References
 
-| step | what to capture | embed code |
-|------|-----------------|------------|
-| **A** | Lifetime histogram | `![life_dist](reports/figures/lifetime_hist.png)` |
-| **B** | Sensor drift plot (3 engines) | `![sensor_traces](reports/figures/sensor_traces.png)` |
-| **C** | Weibull vs KM survivor | `![survivor](reports/figures/survivor_fit.png)` |
-| **D** | MRL curve | `![mrl](reports/figures/mrl_curve.png)` |
-| **E** | Feature‑importance RF | `![rf_feat_imp](reports/figures/rf_feat_imp.png)` |
-| **F** | Test‑set error histogram | `![err_hist](reports/figures/error_hist.png)` |
-
-*(copy‑paste the Markdown snippet after saving each PNG)*
+- Saxena, Goebel, Simon, Eklund — "Damage Propagation Modeling for Aircraft Engine Run-to-Failure Simulation", *PHM 2008*.
+- XGBoost documentation 3.0 — training API and early stopping.
+- Lifelines package — Kaplan-Meier estimator and survival analysis tools.
 
 ---
 
-## 5  Key equations
-
-> See `src/turbofan/reliability.py` for full derivations.
-
-* **Weibull survivor**  \(S(t)=e^{-(t/\lambda)^{\kappa}}\)
-* **Mean residual life**  \(L(t)=\frac{1}{S(t)}\int_t^\infty S(u)\,du\;−\;t\)
-* **PHM08 penalty**  \(\text{penalty}(d)=\begin{cases}e^{-d/13}-1,&d<0\\ e^{d/10}-1,&d\ge0\end{cases}\)
-
----
-
-## 6  Results summary
-
-| model | val MAE | test MAE | PHM08 (sum) |
-|-------|--------:|---------:|-------------:|
-| Weibull MRL baseline | 45.2 | 48.8 | 150.3 |
-| **Random‑Forest** | **21.5** | **19.3** | **79.0** |
-| XGBoost (quick) | 23.0 | 20.6 | 76.2 |
-
-**Take‑away:** tree‑based ML with rolling‑sensor features halves error over a pure reliability model while staying fully interpretable.
-
----
-
-## 7  Presenting live
-
-1. Open the repo in **VS Code → Markdown preview** (`Ctrl+Shift+V`).
-2. Scroll through each section while talking; click image thumbnails to zoom.
-3. Run `python -m turbofan.train_rf` live (takes < 1 min) to show reproducibility.
-
----
-
-## 8  References
-
-* Saxena et al., “Damage Propagation Modeling for Aircraft Engine Run‑to‑Failure Simulation”, *PHM08.*
-* XGBoost 3.0.0 documentation, callbacks & training API.
-
----
-
-> © 2025 — Reliability Engineering final project, Marouf Paul & team.
-
+> 2025 — Final Reliability Engineering Project — Marouf Paul 🚀
 
