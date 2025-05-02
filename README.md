@@ -27,7 +27,9 @@ turbofan-rul/
 │   └── xgb_fd001.json
 ├── notebooks/               # Jupyter analysis
 │   ├── 01_eda_fd001.ipynb
-│   └── 03_figures_fd001.ipynb
+│   ├── 03_figures_fd001.ipynb
+│   └── 04_lstm_fd001.ipynb
+│   
 ├── reports/                 # Predictions + final figures
 │   ├── rf_fd001_predictions.csv
 │   ├── xgb_fd001_predictions.csv
@@ -196,11 +198,14 @@ $$
 
 # 6. Results Summary
 
-| Model | MAE (cycles) | RMSE (cycles) | 
-|------|-------------:|--------------:|
-| Weibull MRL baseline | 45.2 | 48.8 | 
-| **Random-Forest (final)** | **19.3** | **26.8** | 
-| XGBoost (basic) | 20.6 | 28.8 | 
+| Model                  | MAE (cycles) | RMSE (cycles) | 
+|------------------------|-------------:|--------------:|
+| Weibull MRL baseline   |         45.2 |          48.8 |    
+| Random-Forest (final)  |         19.3 |          26.8 |     
+| XGBoost (basic)        |         20.6 |          28.8 |      
+| LSTM (single)          |         31.9 |          38.2 |       
+| **Ensemble (RF + LSTM)**| **13.8**     | **20.2**     |   
+
 
 ---
 
